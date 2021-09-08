@@ -207,7 +207,6 @@ function App() {
         >
           Stand
         </button>
-        <button>Dealer</button>
       </div>
     </div>
   );
