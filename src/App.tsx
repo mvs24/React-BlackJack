@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import Card from "./models/Card";
 import { Color } from "./models/Card";
@@ -61,7 +61,32 @@ function App() {
   const [confirmedAceValue, setConfirmedAceValue] = useState<
     number | undefined
   >(undefined);
+  const [loser, setLoser] = useState<undefined | string>(undefined);
   const [winner, setWinner] = useState<undefined | string>(undefined);
+
+  useEffect(() => {
+    const checkForLoserHandler = () => {
+      if (turn === "you" && myPoints > 21) {
+        setLoser("Dealer won");
+      } else if (turn === "dealer" && dealerPoints > 21) {
+        setLoser("You won");
+      }
+    };
+
+    checkForLoserHandler();
+  }, [turn, myPoints, dealerPoints]);
+
+  useEffect(() => {
+    const checkForBlackjack = function () {
+      if (turn === "you" && myPoints === 21) {
+        setWinner("Blackjack!! You won!!!");
+      } else if (turn === "dealer" && dealerPoints === 21) {
+        setWinner("Blackjack!!! Dealer won");
+      }
+    };
+
+    checkForBlackjack();
+  }, [turn, myPoints, dealerPoints]);
 
   const removeCardHandler = (randomCard: Card) => {
     setCards((prevState) => prevState.filter((card) => card !== randomCard));
@@ -70,7 +95,11 @@ function App() {
   const confirmAceValueHandler = () => {
     setConfirmedAceValue(aceValue);
     setAceCardSelect(false);
-    if (aceValue) setMyPoints((prevPoints) => prevPoints + aceValue);
+    if (aceValue) {
+      if (turn === "you") setMyPoints((prevPoints) => prevPoints + aceValue);
+      if (turn === "dealer")
+        setDealerPoints((prevPoints) => prevPoints + aceValue);
+    }
   };
 
   const addPoints = (card: Card) => {
@@ -78,7 +107,8 @@ function App() {
     if (isAce) {
       setAceCardSelect(true);
     } else {
-      setMyPoints((prevPoints) => prevPoints + card.value);
+      if (turn === "you") setMyPoints((prevPoints) => prevPoints + card.value);
+      else setDealerPoints((prevPoints) => prevPoints + card.value);
     }
   };
 
@@ -88,26 +118,53 @@ function App() {
 
     if (turn === "you") {
       setMyCards((prevState) => [...prevState, randomCard]);
-      addPoints(randomCard);
     } else {
       setDealerCards((prevCards) => [...prevCards, randomCard]);
     }
+    addPoints(randomCard);
     removeCardHandler(randomCard);
+  };
+
+  const checkWinner = function () {
+    if (myPoints > dealerPoints) {
+      setWinner(`You won`);
+    } else {
+      setWinner("Dealer won");
+    }
+  };
+
+  const standHandler = function () {
+    if (myPoints > 0 && dealerPoints > 0) {
+      checkWinner();
+    }
+    setTurn(turn === "you" ? "dealer" : "you");
   };
 
   return (
     <div className="App">
-      <div className="you">
-        {myCards.map((card) => {
-          return (
-            <span
-              key={card.presentation}
-              className={`${card.color} cardPresentation`}
-            >
-              {card.presentation}
-            </span>
-          );
+      {loser !== undefined &&
+        setTimeout(() => {
+          alert(loser);
         })}
+      {winner &&
+        setTimeout(() => {
+          alert(winner);
+        })}
+      <div className={`you ${turn === "you" ? "active" : ""}`}>
+        <div>You</div>
+
+        <div>
+          {myCards.map((card) => {
+            return (
+              <span
+                key={card.presentation}
+                className={`${card.color} cardPresentation`}
+              >
+                {card.presentation}
+              </span>
+            );
+          })}
+        </div>
         <div>Points: {myPoints}</div>
 
         {aceCardSelect === true && (
@@ -120,15 +177,36 @@ function App() {
           </>
         )}
       </div>
-      <div className="dealer">Dealer</div>
+      <div className={`dealer ${turn === "dealer" ? "active" : ""}`}>
+        <div>Dealer</div>
+        {dealerCards.map((card) => {
+          return (
+            <span
+              key={card.presentation}
+              className={`${card.color} cardPresentation`}
+            >
+              {card.presentation}
+            </span>
+          );
+        })}
+        <div className="">Points: ${dealerPoints}</div>
+      </div>
       <div className="buttons">
         <button
           disabled={aceCardSelect && confirmedAceValue === undefined}
-          onClick={hitHandler}
+          onClick={() => {
+            if (!winner && !loser) hitHandler();
+          }}
         >
           Hit
         </button>
-        <button>Stand</button>
+        <button
+          onClick={() => {
+            if (!winner && !loser) standHandler();
+          }}
+        >
+          Stand
+        </button>
         <button>Dealer</button>
       </div>
     </div>

@@ -9,7 +9,7 @@
   width: 400px;
   margin: 50px;
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-around;
 }
 
 .dealer {
